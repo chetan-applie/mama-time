@@ -48,6 +48,29 @@ export function createApp() {
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'mama-time-api', version: config.version, environment: config.env, storage: 'atomic-json-file', time: new Date().toISOString() });
   });
+  app.get('/api/diagnose', (_req, res) => {
+    const store = getDb();
+    res.json({
+      env: {
+        VERCEL: process.env.VERCEL || 'not set',
+        VERCEL_URL: process.env.VERCEL_URL || 'not set',
+        NODE_ENV: process.env.NODE_ENV || 'not set',
+        databasePath: config.databasePath,
+      },
+      configBootstrap: {
+        email: config.auth.bootstrapEmail,
+        passwordLength: config.auth.bootstrapPassword ? config.auth.bootstrapPassword.length : 0,
+        isDefaultPassword: config.auth.bootstrapPassword === 'VercelChangeMe-Now-2026!',
+        isRandomPassword: config.auth.bootstrapPassword && config.auth.bootstrapPassword.startsWith('MT-'),
+      },
+      dbAdmins: store.admins.map(admin => ({
+        id: admin.id,
+        email: admin.email,
+        active: admin.active,
+        has_password_hash: !!admin.password_hash
+      }))
+    });
+  });
   app.use('/api/public', publicRouter);
   app.use('/api/admin/auth', authRouter);
   app.use('/api/admin', adminRouter);
