@@ -15,8 +15,8 @@ const randomPassword = () => `MT-${crypto.randomBytes(12).toString('base64url')}
 
 const production = truthy(args.production);
 const baseUrl = args['base-url'] || (production ? '' : 'http://localhost:3000');
-const adminPassword = args['admin-password'] || 'MT-LUhsxPujvVFP5_6e!9a';
-const adminEmail = (args['admin-email'] || 'admin@sentinators.local').trim().toLowerCase();
+const adminPassword = args['admin-password'] || 'VercelChangeMe-Now-2026!';
+const adminEmail = (args['admin-email'] || 'admin@example.com').trim().toLowerCase();
 const whatsapp = String(args.whatsapp || '').replace(/\D/g, '');
 const notificationEmail = String(args['notification-email'] || '').trim();
 const enforceCampaign = args['campaign-enforce'] === undefined ? production : truthy(args['campaign-enforce']);
