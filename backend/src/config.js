@@ -30,7 +30,9 @@ if (process.env.VERCEL === '1') {
   if (!process.env.ADMIN_BOOTSTRAP_EMAIL || process.env.ADMIN_BOOTSTRAP_EMAIL.endsWith('.local')) {
     process.env.ADMIN_BOOTSTRAP_EMAIL = 'admin@example.com';
   }
-  if (!process.env.ADMIN_BOOTSTRAP_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD === 'ChangeMe-Now-2026!') {
+  if (!process.env.ADMIN_BOOTSTRAP_PASSWORD || 
+      process.env.ADMIN_BOOTSTRAP_PASSWORD === 'ChangeMe-Now-2026!' ||
+      process.env.ADMIN_BOOTSTRAP_PASSWORD.startsWith('MT-')) {
     process.env.ADMIN_BOOTSTRAP_PASSWORD = 'VercelChangeMe-Now-2026!';
   }
 }
