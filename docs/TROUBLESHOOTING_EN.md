@@ -1,72 +1,51 @@
 # Troubleshooting
 
-## Frontend says it is not built
+## `ECONNREFUSED` or database connection timeout
+
+- verify PostgreSQL is running;
+- verify host/port in `DATABASE_URL`;
+- in Docker, use hostname `db`, not `127.0.0.1` inside the app container;
+- run `docker compose ps` and inspect `docker compose logs db`;
+- check firewall/private-network rules;
+- check TLS settings for managed databases.
+
+## Authentication failed for PostgreSQL
+
+Confirm `POSTGRES_USER`, `POSTGRES_PASSWORD`, database name and URL encoding. Changing Compose credentials does not change an already initialized PostgreSQL volume. For local development, remove/recreate the volume only when data loss is acceptable.
+
+## Missing table or relation
 
 ```bash
-npm run build
+npm run db:migrate
+npm run db:status
 ```
 
-Verify `frontend/dist/index.html` exists.
+Do not create tables manually.
 
-## `npm run dev` starts only one service
+## Migration checksum mismatch
 
-Check ports 3000 and 5173 are free. Stop old Node/Vite processes and rerun.
+An applied migration file was edited. Restore the committed original file and create a new numbered migration for the change.
 
-## Form submits but no email arrives
+## Application starts but form returns 500
 
-The lead should still appear in the backoffice. Check:
+Check Node logs and `/api/health`. Confirm migrations, database permissions and available connections.
 
-- `NOTIFICATION_EMAIL`;
-- all SMTP fields;
-- SMTP port and secure mode;
-- provider application password;
-- spam folder;
-- server outbound SMTP restrictions.
+## Admin login fails
 
-## Leads disappear after container recreation
-
-The Docker data volume was not mounted. Use the supplied `docker-compose.yml` or bind-mount `/app/backend/data`.
-
-## Admin login fails after changing `.env`
-
-The bootstrap credentials only create the first admin when the data store has no admin. Existing credentials remain in the data file. Use the backoffice password change or:
+The bootstrap credentials create an account only when no admin exists. Use the current password, the backoffice password-change flow or:
 
 ```bash
-npm run create-admin -w backend -- admin@example.ch 'NewStrongPassword!2026' 'Sentinators Admin'
+npm run create-admin -- admin@example.ch 'Strong-New-Password' 'Admin Name'
 ```
 
-## Production startup rejects configuration
+## `pg_dump` or `pg_restore` not found
 
-Read the startup error. Production requires:
+Install PostgreSQL client tools or execute the command in the supplied Docker application image.
 
-- HTTPS `APP_BASE_URL`;
-- strong JWT/IP secrets;
-- non-default admin password;
-- real admin email;
-- valid campaign dates;
-- complete or empty SMTP credentials.
+## Docker database volume contains development credentials
 
-## Permission error writing data
+Credentials are initialized only on first volume creation. Back up required data, then either change the PostgreSQL role password inside the database or recreate the volume during a controlled development reset.
 
-```bash
-mkdir -p backend/data
-chown -R APPLICATION_USER:APPLICATION_GROUP backend/data
-chmod 700 backend/data
-```
+## Importing the old JSON file fails
 
-## Campaign form is disabled unexpectedly
-
-Check backoffice settings:
-
-- form enabled;
-- campaign enforcement;
-- campaign start/end;
-- Europe/Zurich timezone.
-
-## JSON data file is corrupt
-
-The application preserves a `.broken-TIMESTAMP` copy and stops. Restore the latest backup while the server is stopped.
-
-## Wrong client IP behind Nginx
-
-Set `TRUST_PROXY=1` and ensure Nginx forwards `X-Forwarded-For` and `X-Forwarded-Proto`.
+Check the file is the v1 `mama-time.json` structure. The target database must have no leads unless `--replace=1` is deliberately used after a backup.

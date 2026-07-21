@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import LeadModal from '../components/LeadModal.jsx';
-import { trackEvent, useCampaign, useWhatsappUrl } from '../lib/campaign.js';
+import { trackEvent, useWhatsappUrl } from '../lib/campaign.js';
+import { openCookieSettings } from '../lib/metaPixel.js';
 
 
-export default function LandingPage() {
-  const { campaign } = useCampaign();
+export default function LandingPage({ campaign }) {
   const whatsappUrl = useWhatsappUrl(campaign);
   const [modal, setModal] = useState({ open: false, offer: 'single' });
   const [openFaq, setOpenFaq] = useState(null);
@@ -20,6 +20,13 @@ export default function LandingPage() {
     return () => { document.body.className = ''; delete document.body.dataset.campaignStatus; };
   }, [campaign.campaignStatus]);
 
+  useEffect(() => {
+    trackEvent('mama_time_landing_view', {
+      content_name: 'MAMA TIME 2026',
+      content_category: 'Daytime Training'
+    });
+  }, [campaign.metaPixelEnabled, campaign.metaPixelId]);
+
   const openForm = (offer) => {
     if (campaign.formEnabled === false || (campaign.campaignEnforce && campaign.campaignStatus !== 'active')) return;
     setModal({ open: true, offer });
@@ -30,7 +37,11 @@ export default function LandingPage() {
       openForm('single');
       return;
     }
-    trackEvent('mama_time_whatsapp_click');
+    trackEvent('mama_time_whatsapp_click', {
+      content_name: 'MAMA TIME 2026',
+      content_category: 'Daytime Training',
+      contact_method: 'whatsapp'
+    });
   };
   const inactive = campaign.formEnabled === false || (campaign.campaignEnforce && campaign.campaignStatus !== 'active');
 
@@ -96,7 +107,7 @@ export default function LandingPage() {
         <section id="final-cta" className="final-cta"><div className="page-shell final-cta__inner"><div className="final-cta__copy"><h2>SICHERE DIR JETZT<br />DEINEN PLATZ</h2><p>Die Aktion läuft nur bis zum {campaignDates.endLong}. Sichere dir jetzt dein MAMA TIME Angebot und starte nach den Schulferien.</p></div><div className="final-cta__actions"><button className="btn btn--primary" type="button" onClick={() => openForm('single')} disabled={inactive}>Jetzt Platz sichern <Icon name="arrow" /></button><button className="btn btn--outline-light" type="button" onClick={() => openForm('besties')} disabled={inactive}>Mit Bestie anmelden <Icon name="heart" /></button><a className="btn btn--whatsapp" href={whatsappUrl || '#'} target={whatsappUrl ? '_blank' : undefined} rel="noopener" onClick={whatsapp}><Icon name="whatsapp" />WhatsApp Anfrage senden</a></div><div className="deadline-badge">NUR BIS<strong>{campaignDates.endShort}</strong></div></div></section>
       </main>
 
-      <footer className="legal-footer"><div className="page-shell"><span>© 2026 Sentinators Gym · Weite SG</span><nav aria-label="Rechtliches"><Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/admin">Backoffice</Link></nav></div></footer>
+      <footer className="legal-footer"><div className="page-shell"><span>© 2026 Sentinators Gym · Weite SG</span><nav aria-label="Rechtliches"><Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link>{campaign.metaPixelEnabled && campaign.metaPixelId ? <button className="footer-link-button" type="button" onClick={openCookieSettings}>Cookie-Einstellungen</button> : null}<Link to="/admin">Backoffice</Link></nav></div></footer>
       <div className="mobile-sticky-cta" aria-label="Schnellaktion"><div><span>ab</span><strong>CHF {campaign.singlePriceChf}.–</strong></div><button className="btn btn--primary" type="button" onClick={() => openForm('single')} disabled={inactive}>Platz sichern</button></div>
       <LeadModal open={modal.open} initialOffer={modal.offer} campaign={campaign} onClose={() => setModal((current) => ({ ...current, open: false }))} />
     </>

@@ -1,62 +1,79 @@
 # Security and Privacy
 
-## Implemented controls
+## Operator details supplied for the public legal pages
 
-- Helmet security headers;
-- production content security policy;
-- Express signature disabled;
-- HTTPS-only admin cookie in production;
-- HttpOnly and SameSite cookie;
-- signed JWT sessions;
-- independent CSRF token for modifications;
-- bcrypt password hashing with cost 12;
-- login and public-form rate limits;
-- server-side Zod validation;
-- small request-body limits;
-- honeypot and minimum form completion time;
-- HMAC IP hash instead of raw IP;
-- data file mode requested as 0600;
-- atomic write/rename;
-- no password hash in browser/API backup;
-- no secrets in public config;
-- optional SMTP credentials stored only in `.env`;
-- no invented public reviews.
+- Sentinator GmbH
+- Hauptstrasse 11
+- 9476 Weite
+- Switzerland
+- `info@sentinator.li`
 
-## Production requirements
+The built-in imprint and privacy pages contain these details and no business-information placeholders. The responsible operator should still obtain a legal review before publication.
 
-- TLS must terminate at Nginx/proxy;
-- `APP_BASE_URL` must be HTTPS;
-- `TRUST_PROXY=1` with one trusted reverse proxy;
-- use unique JWT and IP-hash secrets;
-- use a unique administrator password;
-- restrict SSH and filesystem access;
-- do not expose application source directories;
-- back up data and encrypt off-server copies;
-- keep Node and npm packages patched;
-- run `npm audit --omit=dev` during maintenance;
-- set a documented data-retention period;
-- remove or anonymize leads when no longer needed;
-- review access by developers or processors outside Switzerland;
-- complete the legal privacy notice before launch.
+## Implemented application controls
 
-## India-based developer access
+- HTTPS required by production validation and deployment guidance;
+- Helmet security headers and a restrictive Content-Security-Policy;
+- HttpOnly, Secure and SameSite admin cookie;
+- JWT issuer/audience and expiration checks;
+- `auth_version` invalidates existing tokens after password changes;
+- CSRF token required for state-changing admin requests;
+- bcrypt password hashes;
+- parameterized PostgreSQL queries;
+- transactions, constraints and foreign keys;
+- rate limits for public submissions and login;
+- honeypot and minimum-fill-time checks;
+- HMAC IP hash rather than raw IP storage on leads;
+- CSV formula-injection protection;
+- sanitized logical JSON export;
+- destructive maintenance commands require explicit confirmation and environment flags.
 
-When developers outside Switzerland access a staging or production system:
+## Meta Pixel consent model
 
-- staging should contain synthetic data only;
-- production access must be explicitly authorized and time-limited;
-- use named accounts and strong MFA for infrastructure access;
-- do not send `.env` or customer exports through unsecured chat;
-- maintain processor/data-transfer documentation as required by the responsible company and legal adviser;
-- revoke access after delivery;
-- rotate secrets after external development access ends.
+The external script at `connect.facebook.net` is inserted only when all of these conditions are true:
 
-## Incident response
+1. the Pixel is enabled in PostgreSQL-backed backoffice settings;
+2. a valid numeric Pixel ID is configured;
+3. the visitor explicitly selects **Marketing akzeptieren**.
 
-1. isolate the server;
-2. preserve logs and backups;
-3. rotate JWT, IP hash, SMTP, SSH and admin credentials;
-4. review the data file and access logs;
-5. restore from a known-good backup if required;
-6. document affected data and dates;
-7. follow the legally required notification process determined by the responsible organization.
+Choosing **Nur notwendige** keeps the Pixel unloaded. Direct visits to protected `/admin` routes also do not initialize the Pixel or show the marketing banner. The footer provides a control to reopen cookie settings. On withdrawal, the integration sends Meta consent revocation when possible and attempts to remove `_fbp` and `_fbc` first-party cookies.
+
+Prepared events are limited to:
+
+- `PageView` after consent;
+- `ViewContent` for the landing page;
+- `Contact` when a WhatsApp link is actually clicked;
+- `Lead` only after the API confirms a successful PostgreSQL write.
+
+A strict allowlist permits only neutral event parameters: campaign/content labels, offer type, contact method, value and currency. The Pixel integration does not send names, email addresses, telephone numbers, bestie details, free-text messages, IP hashes or internal lead references as event parameters.
+
+The production CSP allows only the required Meta script and connection endpoints in addition to same-origin application resources.
+
+## Database security
+
+- keep PostgreSQL on a private network;
+- do not publish port 5432 to the internet;
+- use unique production credentials;
+- use TLS for remote or managed databases;
+- limit database-user privileges;
+- rotate credentials after developer handoff;
+- encrypt backups and restrict access;
+- monitor failed connections and storage growth;
+- patch PostgreSQL and Node dependencies through controlled releases.
+
+## Personal data and retention
+
+Lead records contain contact details, optional bestie details, workflow notes and marketing attribution. The operator must define and document:
+
+- legal basis and final privacy wording;
+- retention and deletion periods;
+- backoffice access roles;
+- deletion/export handling for data-subject requests;
+- processor agreements and cross-border access rules;
+- incident response and breach notification procedures.
+
+Use synthetic data in development and staging. Do not copy production leads to unmanaged laptops, public issue trackers or chat tools.
+
+## External developer access
+
+Use named time-limited accounts, MFA, VPN/private access and least privilege. Prefer sanitized staging data. Remove access after acceptance and rotate credentials that were visible during development.

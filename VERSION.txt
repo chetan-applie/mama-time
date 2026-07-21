@@ -1,5 +1,7 @@
-MAMA TIME React + Node Production Kit
-Version: 1.0.0
-Release date: 2026-07-14
+MAMA TIME React + Node + PostgreSQL Production Kit
+Version: 2.1.0
+Release date: 2026-07-21
 Public language: German (de-CH)
 Developer documentation: English
+Production database: PostgreSQL
+Consent-controlled tracking: Meta Pixel

@@ -11,11 +11,15 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [database, setDatabase] = useState(null);
 
   useEffect(() => {
     authFetch('/api/admin/settings')
       .then((result) => setForm(result.settings))
       .catch((err) => setError(err.message));
+    authFetch('/api/admin/system/database')
+      .then((result) => setDatabase(result.database))
+      .catch(() => setDatabase(null));
   }, [authFetch]);
 
   const update = (event) => {
@@ -61,7 +65,7 @@ export default function AdminSettingsPage() {
         <div>
           <p className="admin-eyebrow">KAMPAGNENKONFIGURATION</p>
           <h1>Einstellungen</h1>
-          <p>Öffentliche Preise, Zeitraum, Kontaktangaben und Formularstatus ohne Code ändern.</p>
+          <p>Öffentliche Preise, Zeitraum, Kontaktangaben, Meta Pixel und Formularstatus ohne Code ändern.</p>
         </div>
       </section>
       {saved && <div className="admin-alert admin-alert--success">Einstellungen wurden gespeichert und gelten sofort.</div>}
@@ -97,7 +101,14 @@ export default function AdminSettingsPage() {
               <div className="settings-divider"><span>Kontakt &amp; Benachrichtigung</span></div>
               <SettingField label="WhatsApp-Nummer" name="whatsapp_number" value={form.whatsapp_number || ''} onChange={update} error={fieldErrors.whatsapp_number} placeholder="41791234567" inputMode="numeric" />
               <label>WhatsApp-Standardtext<textarea name="whatsapp_message" rows="4" value={form.whatsapp_message || ''} onChange={update} required className={fieldErrors.whatsapp_message ? 'is-invalid' : ''} />{fieldErrors.whatsapp_message && <small className="field-error">{fieldErrors.whatsapp_message}</small>}</label>
-              <SettingField label="Benachrichtigungs-E-Mail" type="email" name="notification_email" value={form.notification_email || ''} onChange={update} error={fieldErrors.notification_email} placeholder="marketing@example.ch" />
+              <SettingField label="Benachrichtigungs-E-Mail" type="email" name="notification_email" value={form.notification_email || ''} onChange={update} error={fieldErrors.notification_email} placeholder="info@sentinator.li" />
+
+              <div className="settings-divider"><span>Tracking &amp; Meta Pixel</span></div>
+              <label className="admin-checkbox"><input type="checkbox" name="meta_pixel_enabled" checked={Boolean(form.meta_pixel_enabled)} onChange={update} /><span>Meta Pixel nach Marketing-Einwilligung aktivieren</span></label>
+              <SettingField label="Meta Pixel-ID" name="meta_pixel_id" value={form.meta_pixel_id || ''} onChange={update} error={fieldErrors.meta_pixel_id} placeholder="123456789012345" inputMode="numeric" pattern="[0-9]*" disabled={!form.meta_pixel_enabled} />
+              <p className="admin-field-note">Der Pixel lädt erst, nachdem eine Besucherin im Cookie-Banner „Marketing akzeptieren“ gewählt hat. PageView, ViewContent, Contact und Lead sind im Frontend vorbereitet.</p>
+
+              <div className="settings-divider"><span>Formular</span></div>
               <label className="admin-checkbox"><input type="checkbox" name="form_enabled" checked={Boolean(form.form_enabled)} onChange={update} /><span>Anfrageformular aktiv</span></label>
               <div className="admin-form__actions"><button className="admin-btn admin-btn--primary" type="submit" disabled={saving}>{saving ? 'Wird gespeichert …' : 'Einstellungen speichern'}</button></div>
             </form>
@@ -111,9 +122,22 @@ export default function AdminSettingsPage() {
               <li>Die Zeitzone bleibt auf <code>Europe/Zurich</code>.</li>
               <li>„Zeitraum erzwingen“ erst nach Abschluss aller Tests aktivieren.</li>
               <li>Vor größeren Änderungen mit <code>npm run backup</code> ein Backup erstellen.</li>
-              <li>Impressum und Datenschutzerklärung müssen vor Veröffentlichung rechtlich ergänzt werden.</li>
+              <li>Impressum und Datenschutzerklärung enthalten die Betreiberangaben der Sentinator GmbH und sollten vor Veröffentlichung rechtlich geprüft werden.</li>
+              <li>Die Meta Pixel-ID findest du im Meta Events Manager. Nach dem Speichern Einwilligung, PageView, ViewContent, Contact und Lead im Bereich „Test-Events“ prüfen.</li>
             </ul>
             <a className="admin-btn admin-btn--light admin-btn--wide-link" href={downloadUrl('/api/admin/backup.json')}>Geschütztes JSON-Backup herunterladen</a>
+            {database && (
+              <div className="database-status-card">
+                <div className="database-status-card__head"><span className="database-dot" /> <strong>Datenbank verbunden</strong></div>
+                <dl>
+                  <div><dt>Engine</dt><dd>{database.engine}</dd></div>
+                  <div><dt>Datenbank</dt><dd>{database.databaseName || '–'}</dd></div>
+                  <div><dt>Größe</dt><dd>{formatBytes(database.sizeBytes)}</dd></div>
+                  <div><dt>Migrationen</dt><dd>{database.migrations?.filter((item) => item.applied && item.checksumValid).length || 0}/{database.migrations?.length || 0}</dd></div>
+                  <div><dt>Pool</dt><dd>{database.pool?.total || 0} Verbindungen</dd></div>
+                </dl>
+              </div>
+            )}
           </aside>
         </div>
       )}
@@ -133,6 +157,7 @@ function normalizeResponse(settings) {
   return {
     ...settings,
     campaign_enforce: String(settings.campaign_enforce) === 'true' || settings.campaign_enforce === true,
+    meta_pixel_enabled: String(settings.meta_pixel_enabled) === 'true' || settings.meta_pixel_enabled === true,
     form_enabled: String(settings.form_enabled) !== 'false' && settings.form_enabled !== false,
     single_price_chf: Number(settings.single_price_chf || 550),
     besties_price_chf: Number(settings.besties_price_chf || 990)
@@ -141,4 +166,13 @@ function normalizeResponse(settings) {
 
 function formatNumber(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+
+function formatBytes(value) {
+  const bytes = Number(value || 0);
+  if (!bytes) return '0 MB';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  return `${(bytes / (1024 ** index)).toFixed(index > 1 ? 1 : 0)} ${units[index]}`;
 }

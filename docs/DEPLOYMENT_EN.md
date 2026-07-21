@@ -1,129 +1,105 @@
 # Deployment Guide
 
-## Option A – Nginx + systemd (recommended conventional VPS setup)
-
-### 1. Server requirements
-
-- Ubuntu/Debian or comparable Linux;
-- Node.js 20.19+ or 22.12+;
-- npm 10+;
-- Nginx;
-- HTTPS certificate;
-- dedicated unprivileged Linux user;
-- one application process only.
-
-### 2. Install application
+## Option A – Docker Compose (recommended for a single host)
 
 ```bash
-sudo mkdir -p /var/www/mama-time
-sudo chown -R mamatime:mamatime /var/www/mama-time
-# Upload/extract the package into /var/www/mama-time
-cd /var/www/mama-time
 npm ci
-npm run setup -- --production=1 \
-  --base-url=https://mama-time.example.ch \
-  --admin-email=marketing@example.ch \
+npm run setup -- --docker=1 \
+  --production=1 \
+  --base-url=https://sentinators.ch \
+  --admin-email=info@sentinator.li \
   --whatsapp=41790000000
-npm run build
-npm run doctor
-npm test
-```
 
-### 3. Permissions
-
-```bash
-chmod 600 .env
-mkdir -p backend/data
-chmod 700 backend/data
-chown -R mamatime:mamatime backend/data
-```
-
-### 4. systemd
-
-Copy and adapt `deployment/mama-time.service.example`:
-
-```bash
-sudo cp deployment/mama-time.service.example /etc/systemd/system/mama-time.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now mama-time
-sudo systemctl status mama-time
-```
-
-### 5. Nginx and HTTPS
-
-Adapt `deployment/nginx.conf.example`, install it in the Nginx site configuration and issue a TLS certificate. Set `TRUST_PROXY=1`.
-
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### 6. Verify
-
-```bash
-curl -fsS https://mama-time.example.ch/api/health
-```
-
-Then test the public form and backoffice manually.
-
-## Option B – Docker Compose
-
-1. Create `.env` with the production setup command.
-2. Build and start:
-
-```bash
 docker compose up -d --build
 docker compose ps
 docker compose logs -f mama-time
 ```
 
-The named volume `mama_time_data` persists the JSON store. Put Nginx, Traefik or another HTTPS proxy in front of port 3000.
+Compose creates:
 
-Backup the volume regularly. A straightforward logical backup is:
+- `db`: PostgreSQL 17 with a persistent named volume;
+- `mama-time`: React production build + Node API;
+- optional `adminer` profile bound only to localhost.
+
+The application container runs migrations before Node starts.
+
+### Docker backup
 
 ```bash
-docker compose exec mama-time npm run backup
+docker compose exec mama-time npm run db:backup
 ```
 
-## Option C – PM2
+Copy the dump out of the container or mount a protected backup directory.
+
+## Option B – Managed PostgreSQL + systemd
+
+1. Create a Linux service account and application directory.
+2. Install Node.js, npm and PostgreSQL client tools.
+3. Copy the project and create `.env`.
+4. Use a managed PostgreSQL `DATABASE_URL`.
+5. Run:
 
 ```bash
 npm ci
+npm run db:migrate
 npm run build
-npm install -g pm2
+npm run doctor
+# Optional after a successful build: npm prune --omit=dev
+```
+
+6. Install `deployment/mama-time.service.example` as a systemd unit.
+7. Put Nginx in front using `deployment/nginx.conf.example`.
+8. Enable HTTPS before exposing the site.
+
+## Option C – PM2
+
+Run migrations once during deployment:
+
+```bash
+npm run db:migrate
+npm run build
 pm2 start ecosystem.config.cjs
 pm2 save
-pm2 startup
 ```
 
-**Do not change `instances: 1`.** Cluster mode is not safe with the file store.
+PostgreSQL supports multiple Node instances, but increase instances only after sizing the combined database connection pools and verifying sticky-session requirements are not introduced by future features.
 
-## Rolling back
+## Nginx requirements
 
-1. stop the application;
-2. back up the current data file;
-3. restore the previous application code;
-4. keep the current compatible data file or restore a known-good backup;
-5. run `npm ci`, `npm run build`, `npm run doctor`, `npm test`;
-6. restart and verify `/api/health`.
+- redirect HTTP to HTTPS;
+- proxy to `127.0.0.1:3000`;
+- forward `X-Forwarded-Proto` and client IP headers;
+- set `TRUST_PROXY` correctly;
+- never serve source, `.env`, backups or database ports;
+- preserve same-origin behavior for auth cookies and CSRF.
 
-## Backup and restore
+## Deployment sequence
 
-Create a backup:
+1. Back up the current production database.
+2. Deploy code to a new release directory/container image.
+3. Install exact dependencies with `npm ci`.
+4. Apply migrations.
+5. Build React.
+6. Run automated tests and doctor.
+7. Start/restart Node.
+8. Check `/api/health`.
+9. Perform login, single/besties lead and Meta-consent smoke checks.
+10. Enter the Pixel ID in `/admin/settings`, then verify Test Events.
+11. Monitor logs and database connections.
 
-```bash
-npm run backup
-```
+## Rollback
 
-Backups are written to `backend/data/backups/`.
+Application rollback is safe only when the previous version is compatible with the migrated schema. Prefer backward-compatible additive migrations. For destructive schema changes, document a database rollback or restore plan before deployment.
 
-Restore:
+## Post-deployment Meta Pixel activation
 
-```bash
-sudo systemctl stop mama-time
-cp backend/data/backups/mama-time-TIMESTAMP.json backend/data/mama-time.json
-chmod 600 backend/data/mama-time.json
-sudo systemctl start mama-time
-```
+The application contains the integration but ships without an active private Pixel ID. After deployment:
 
-Always retain at least one off-server encrypted backup.
+1. open `/admin/settings`;
+2. enter the numeric Meta Pixel/Dataset ID;
+3. enable the Pixel and save;
+4. use a private browser window to verify no Meta request occurs before consent;
+5. accept marketing and test `PageView`, `ViewContent`, WhatsApp `Contact` and successful-form `Lead`;
+6. confirm failed forms do not create a `Lead`.
+
+See `docs/META_PIXEL_SETUP_DE.md`.

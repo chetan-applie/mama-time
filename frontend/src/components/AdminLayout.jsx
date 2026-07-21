@@ -36,7 +36,7 @@ export default function AdminLayout() {
       </header>
       {defaultPasswordWarning && <div className="admin-global-warning"><strong>Sicherheits-Hinweis:</strong> Das dokumentierte Standardpasswort ist noch aktiv. Bitte unter „Konto“ sofort ändern.</div>}
       <main className="admin-shell admin-main"><Outlet context={{ user }} /></main>
-      <footer className="admin-footer"><div className="admin-shell">MAMA TIME React + Node Backoffice · geschützte dateibasierte Datenspeicherung</div></footer>
+      <footer className="admin-footer"><div className="admin-shell">MAMA TIME React + Node Backoffice · geschützte PostgreSQL-Datenspeicherung</div></footer>
     </div>
   );
 }

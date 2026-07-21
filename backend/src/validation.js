@@ -82,10 +82,15 @@ export const settingsUpdateSchema = z.object({
   whatsapp_number: optionalText(40),
   whatsapp_message: requiredText('WhatsApp-Nachricht', 500),
   notification_email: optionalText(180).refine((value) => value === '' || z.string().email().safeParse(value).success, 'Ungültige Benachrichtigungs-E-Mail.'),
+  meta_pixel_enabled: z.union([z.boolean(), z.string()]).transform((value) => ['true', '1', true].includes(value)),
+  meta_pixel_id: optionalText(30).refine((value) => value === '' || /^\d{5,30}$/.test(value), 'Die Meta Pixel-ID darf nur aus 5 bis 30 Ziffern bestehen.'),
   form_enabled: z.union([z.boolean(), z.string()]).transform((value) => ['true', '1', true].includes(value))
 }).superRefine((data, ctx) => {
   if (data.besties_price_chf >= data.single_price_chf * 2) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['besties_price_chf'], message: 'Der Besties-Preis muss unter dem Preis von zwei Einzelabos liegen.' });
+  }
+  if (data.meta_pixel_enabled && !data.meta_pixel_id) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['meta_pixel_id'], message: 'Bitte trage eine Meta Pixel-ID ein oder deaktiviere den Pixel.' });
   }
   const start = Date.parse(data.campaign_start);
   const end = Date.parse(data.campaign_end);

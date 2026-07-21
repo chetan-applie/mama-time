@@ -1,51 +1,39 @@
 # Data Storage and Scaling
 
-## Current storage
+## Current architecture
 
-The application uses an atomic JSON file store. This was selected for a short marketing campaign because it has:
+All production data is stored in PostgreSQL. The previous atomic JSON store has been removed from runtime code.
 
-- zero database service dependency;
-- transparent backup and restore;
-- simple deployment;
-- no native Node add-on;
-- deterministic operation in one Node process.
+Benefits:
 
-## Supported operating model
+- transactional writes;
+- concurrent Node processes;
+- indexed search/filtering;
+- referential integrity;
+- reliable backup/restore tooling;
+- managed-database compatibility;
+- straightforward future reporting/CRM integration.
 
-- one Node process;
-- one writable persistent filesystem;
-- hundreds to low thousands of campaign leads;
-- routine backups;
-- no horizontal scaling.
+## Scaling controls
 
-## Unsupported operating model
+- keep `DATABASE_POOL_MAX` conservative;
+- calculate total connections as pool size × Node instances;
+- add application replicas only behind a shared PostgreSQL database;
+- monitor slow queries and index usage;
+- archive/delete data according to retention policy;
+- use managed backups and point-in-time recovery where available;
+- consider read replicas only when reporting load justifies them.
 
-- PM2 cluster mode;
-- multiple Docker replicas sharing the same JSON file;
-- network filesystems with unreliable atomic rename semantics;
-- high-frequency concurrent writes;
-- permanent CRM-scale storage without migration.
+## Future extensions
 
-## PostgreSQL migration path
+The schema can be extended for:
 
-When scaling is required, keep the REST contract and React frontend. Replace functions in `backend/src/db.js` and `backend/src/services/leadService.js` with a PostgreSQL repository.
+- multiple campaigns;
+- structured staff accounts/roles;
+- contact attempt records;
+- membership/payment integration;
+- webhook/event outbox;
+- CRM synchronization;
+- analytics warehouse export.
 
-Recommended tables:
-
-- admins;
-- settings;
-- leads;
-- lead_activities.
-
-Recommended constraints/indexes:
-
-- unique admin email;
-- unique lead reference;
-- index lead created_at;
-- index lead status;
-- index normalized email;
-- index normalized phone;
-- index UTM source;
-- foreign key activity → lead.
-
-Before migration, stop writes, back up the JSON file, import records, compare counts and sample records, then switch the storage adapter in staging.
+Each change must use a new migration and preserve the public API unless the frontend is deployed simultaneously.

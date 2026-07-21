@@ -1,18 +1,17 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { config } from '../src/config.js';
-import { backupStore, closeDb } from '../src/db.js';
+import { projectRoot } from '../src/config.js';
+import { closeDb, logicalBackup } from '../src/db.js';
 
-const directory = path.join(path.dirname(config.databasePath), 'backups');
-const stamp = new Date().toISOString().replace(/[:.]/g,'-');
-const target = path.join(directory, `mama-time-${stamp}.json`);
+const directory = path.join(projectRoot, 'backend', 'backups');
+const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+const target = path.join(directory, `mama-time-logical-${stamp}.json`);
 
-async function main() {
-  const result = await backupStore(target);
-  console.log(`Backup created: ${result}`);
+try {
+  fs.mkdirSync(directory, { recursive: true });
+  const payload = await logicalBackup();
+  fs.writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
+  console.log(`Logical JSON backup created: ${target}`);
+} finally {
   await closeDb();
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});

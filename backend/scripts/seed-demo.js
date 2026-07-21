@@ -1,15 +1,17 @@
 import { config } from '../src/config.js';
+import { closeDb, initDb } from '../src/db.js';
+import { createLead } from '../src/services/leadService.js';
+
 if (config.isProduction) {
   console.error('Demo seed is disabled in production.');
   process.exit(1);
 }
-import { createLead } from '../src/services/leadService.js';
-import { closeDb } from '../src/db.js';
 
-const firstNames = ['Sandra','Nicole','Julia','Martina','Laura','Nadine','Claudia','Sabrina'];
-const sources = ['facebook','instagram','direct','google'];
+const firstNames = ['Sandra', 'Nicole', 'Julia', 'Martina', 'Laura', 'Nadine', 'Claudia', 'Sabrina'];
+const sources = ['facebook', 'instagram', 'direct', 'google'];
 
-async function main() {
+try {
+  await initDb();
   for (let i = 0; i < 12; i += 1) {
     const besties = i % 3 === 0;
     await createLead({
@@ -32,15 +34,15 @@ async function main() {
       utm_campaign: 'mama-time-demo',
       landing_url: 'http://localhost:3000/?demo=1',
       referrer: '',
-      page_variant: 'react-responsive',
+      page_variant: 'react-responsive-postgresql',
       screen: '390x844'
-    }, { ipHash: `demo-${i}`, userAgent: 'Demo seed', duplicateWindowHours: 0 });
+    }, {
+      ipHash: `demo-${i}`,
+      userAgent: 'Demo seed',
+      duplicateWindowHours: 0
+    });
   }
-  console.log('12 demo leads created.');
+  console.log('12 demo leads created in PostgreSQL.');
+} finally {
   await closeDb();
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});

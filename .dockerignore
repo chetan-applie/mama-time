@@ -3,9 +3,9 @@ frontend/dist
 .env
 .git
 .gitignore
-backend/data/*.json
-backend/data/backups
+backend/backups
 reference
 *.zip
+*.dump
 *.log
 .DS_Store

@@ -1,123 +1,90 @@
 # API Reference
 
-All API responses use JSON unless explicitly stated. Admin cookies are same-origin and HttpOnly.
+All API responses use JSON unless stated otherwise. Admin authentication uses a same-origin HttpOnly cookie.
 
 ## Public
 
 ### `GET /api/health`
 
-Returns service status, version, environment, storage type and current server time.
+Checks PostgreSQL and returns service, version, environment, storage type and server time.
 
 ### `GET /api/public/config`
 
-Returns public campaign configuration, prices, computed savings, WhatsApp configuration and campaign status.
+Returns public campaign configuration and computed values, including:
+
+- campaign dates, status and enforcement state;
+- single and besties prices, savings and per-person value;
+- daytime hours, company display name and location;
+- form availability and WhatsApp configuration;
+- `metaPixelEnabled` – true only when enabled and the stored ID is valid;
+- `metaPixelId` – numeric ID or an empty string.
+
+The public endpoint never returns database credentials, admin configuration or secrets.
 
 ### `POST /api/public/leads`
 
-Creates a lead.
+Creates a single or besties lead. Success: HTTP 201 with `reference`, `duplicate` and a German confirmation message.
 
-Example body:
+Important body fields:
 
-```json
-{
-  "offer_type": "besties",
-  "first_name": "Anna",
-  "last_name": "Muster",
-  "email": "anna@example.ch",
-  "phone": "+41 79 000 00 00",
-  "bestie_first_name": "Lisa",
-  "bestie_last_name": "Muster",
-  "bestie_email": "lisa@example.ch",
-  "bestie_phone": "+41 79 000 00 01",
-  "preferred_contact": "WhatsApp",
-  "start_preference": "Direkt nach den Schulferien",
-  "message": "Bitte am Nachmittag kontaktieren.",
-  "privacy": true,
-  "form_started_at": 1784040000000,
-  "website": "",
-  "utm_source": "facebook",
-  "utm_medium": "paid_social",
-  "utm_campaign": "mama-time-2026",
-  "landing_url": "https://example.ch/",
-  "page_variant": "react-responsive",
-  "screen": "390x844"
-}
-```
+- `offer_type`: `single` or `besties`;
+- mama contact fields;
+- bestie fields for `besties`;
+- `preferred_contact`;
+- `start_preference`;
+- `privacy`;
+- honeypot/timing fields;
+- UTM, click IDs, referrer and landing URL.
 
-Success: HTTP 201 with `reference`, `duplicate` and German message.
+The frontend emits the Meta `Lead` event only after this endpoint returns success. The API itself does not call Meta and does not expose contact data to the Pixel integration.
 
 ## Admin authentication
 
-### `POST /api/admin/auth/login`
-
-Body: `email`, `password`. Sets auth cookie and returns CSRF token.
-
-### `GET /api/admin/auth/me`
-
-Returns active user and CSRF token.
-
-### `POST /api/admin/auth/logout`
-
-Requires authentication and `X-CSRF-Token`.
-
-### `POST /api/admin/auth/change-password`
-
-Requires authentication and CSRF. Body: `current_password`, `new_password`.
+- `POST /api/admin/auth/login`
+- `GET /api/admin/auth/me`
+- `POST /api/admin/auth/logout` – CSRF required
+- `POST /api/admin/auth/change-password` – CSRF required
 
 ## Admin leads
 
-### `GET /api/admin/stats`
+- `GET /api/admin/stats`
+- `GET /api/admin/leads`
+- `GET /api/admin/leads/:id`
+- `PATCH /api/admin/leads/:id` – CSRF required
+- `GET /api/admin/leads/export.csv`
+- `GET /api/admin/backup.json`
 
-Dashboard statistics.
+Lead-list query parameters: `q`, `status`, `offer`, `source`, `dateFrom`, `dateTo`, `sort`, `page`, `perPage`, `includeArchived`.
 
-### `GET /api/admin/leads`
-
-Query parameters:
-
-- `q`;
-- `status`;
-- `offer`;
-- `source`;
-- `dateFrom`;
-- `dateTo`;
-- `sort` (`newest`, `oldest`, `value_desc`, `callback`);
-- `page`;
-- `perPage`;
-- `includeArchived`.
-
-### `GET /api/admin/leads/:id`
-
-Single lead with activities.
-
-### `PATCH /api/admin/leads/:id`
-
-Requires CSRF. Fields: `status`, `assigned_to`, `callback_at`, `notes`, `lost_reason`.
-
-### `GET /api/admin/leads/export.csv`
-
-Authenticated CSV export.
-
-### `GET /api/admin/backup.json`
-
-Authenticated sanitized JSON backup. Administrator password hashes are omitted.
-
-## Admin settings
+## Admin settings and system
 
 ### `GET /api/admin/settings`
 
-Returns editable campaign settings.
+Returns the editable campaign settings, including:
+
+- `campaign_name`, `company_name`, `company_location`;
+- dates, timezone and enforcement;
+- prices and daytime hours;
+- WhatsApp and notification values;
+- `meta_pixel_enabled` as a boolean;
+- `meta_pixel_id` as the stored numeric string or empty string;
+- `form_enabled`.
 
 ### `PATCH /api/admin/settings`
 
-Requires CSRF. Updates campaign, prices, period, contact and form state.
+CSRF-protected. Validates and stores the same settings in PostgreSQL. A Pixel ID must contain 5–30 digits; it is required when `meta_pixel_enabled=true`.
 
-## Common error codes
+### `GET /api/admin/system/database`
 
-- `400` invalid timing or request;
-- `401` not authenticated / expired session;
-- `403` invalid CSRF token;
-- `404` resource not found;
-- `410` campaign or form unavailable;
-- `422` field validation errors;
+Returns PostgreSQL engine, database name/version/size, connection-pool information and migration state.
+
+## Error codes
+
+- `400` invalid timing/request;
+- `401` unauthenticated/expired;
+- `403` invalid CSRF;
+- `404` missing resource;
+- `410` campaign/form unavailable;
+- `422` validation error;
 - `429` rate limit;
-- `500` unexpected server error.
+- `500` unexpected server or database error.

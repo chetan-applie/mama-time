@@ -1,8 +1,8 @@
 {
-  "name": "mama-time-react-node",
-  "version": "1.0.0",
+  "name": "mama-time-react-node-postgresql",
+  "version": "2.1.0",
   "private": true,
-  "description": "Sentinators Gym MAMA TIME campaign – responsive React frontend, Node.js/Express API and lead backoffice.",
+  "description": "Sentinators Gym MAMA TIME campaign \u2013 responsive React frontend, Node.js/Express API, PostgreSQL database and lead backoffice.",
   "type": "module",
   "workspaces": [
     "frontend",
@@ -23,7 +23,12 @@
     "backup": "node backend/scripts/backup.js",
     "doctor": "node tools/doctor.mjs",
     "verify": "npm run build && npm test",
-    "create-admin": "node backend/scripts/create-admin.js"
+    "create-admin": "node backend/scripts/create-admin.js",
+    "db:migrate": "node backend/scripts/migrate.js",
+    "db:status": "node backend/scripts/db-status.js",
+    "db:import-json": "node backend/scripts/import-json.js",
+    "db:backup": "node backend/scripts/backup-postgres.js",
+    "db:restore": "node backend/scripts/restore-postgres.js"
   },
   "devDependencies": {
     "concurrently": "9.2.4"

@@ -1,2 +1,6 @@
-# Daily backup at 02:15. Install with: crontab -e
-15 2 * * * cd /var/www/mama-time && /usr/bin/npm run backup >> /var/log/mama-time-backup.log 2>&1
+# Daily PostgreSQL custom-format backup at 02:15.
+# The server requires pg_dump (PostgreSQL client tools).
+15 2 * * * cd /var/www/mama-time && /usr/bin/npm run db:backup >> /var/log/mama-time-backup.log 2>&1
+
+# Optional additional logical JSON export at 02:25.
+25 2 * * * cd /var/www/mama-time && /usr/bin/npm run backup >> /var/log/mama-time-logical-backup.log 2>&1

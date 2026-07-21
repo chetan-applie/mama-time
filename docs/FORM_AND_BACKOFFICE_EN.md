@@ -1,108 +1,79 @@
-# Form and Backoffice Functional Specification
+# Form and Backoffice Logic
 
-## Public form offers
+## Public form
 
-### Single mama
+The React form supports:
 
-- offer code: `single`;
-- price: CHF 550;
-- one member card;
-- one lead person.
+- `single`: CHF 550, one mama;
+- `besties`: CHF 990, two mamas.
 
-### Mama besties
+Bestie name fields become mandatory only for `besties`. The backend remains authoritative even when client-side validation passes.
 
-- offer code: `besties`;
-- price: CHF 990 total;
-- two member cards;
-- second mama first and last name required;
-- second mama email and phone optional but recommended.
+## Lead creation transaction
 
-## Fields
+The Node service:
 
-| Field | Required | Notes |
-|---|---:|---|
-| first name | yes | max 80 |
-| last name | yes | max 80 |
-| email | yes | valid email, max 180 |
-| phone | yes | at least seven digits |
-| bestie first/last name | besties only | max 80 each |
-| bestie email | optional | validated when supplied |
-| bestie phone | optional | max 50 |
-| preferred contact | yes | phone, WhatsApp or email |
-| start preference | yes | German option value |
-| message | optional | max 2,000 |
-| privacy consent | yes | timestamp stored |
-| honeypot | hidden | bots receive a non-actionable success response |
-| form start timestamp | automatic | detects implausibly fast submissions |
-| attribution | automatic | UTM, click IDs, referrer, landing URL, screen |
+1. loads prices and availability from PostgreSQL settings;
+2. normalizes email and phone;
+3. finds a non-archived matching lead inside the duplicate window;
+4. inserts the lead with either `new` or `duplicate` status;
+5. links `duplicate_of` when applicable;
+6. inserts a `lead_created` or `lead_created_duplicate` activity;
+7. commits both records atomically;
+8. returns success to the frontend.
 
-Submitting the form does not create a paid contract. The confirmation text clearly states that the gym confirms availability, start date and conditions personally.
+Only after step 8 does the consent-controlled browser integration emit a Meta `Lead` event. Client-side validation failures and API/database errors do not emit `Lead`.
 
-## Duplicate logic
+The Meta event receives only `content_name`, `content_category`, `offer_type`, campaign value and `currency=CHF`. Contact fields, bestie data, messages and the returned lead reference are not passed to it.
 
-Within the configured duplicate window, a new submission is marked as a possible duplicate when normalized email or normalized phone matches an existing non-archived lead. It is still stored so no legitimate enquiry is lost.
+## WhatsApp tracking
+
+A Meta `Contact` event is emitted only when a configured WhatsApp link is actually clicked and marketing consent is active. Opening the lead form because no WhatsApp number is configured does not emit `Contact`.
+
+## Backoffice functions
+
+- secure login/logout and password change;
+- dashboard totals, pipeline value, won revenue and conversion rate;
+- source and 30-day lead distribution;
+- search, filtering, sorting and pagination;
+- responsive lead list and detail view;
+- direct phone, email and WhatsApp actions;
+- status, assignee, callback, notes and lost reason;
+- immutable activity history;
+- CSV export;
+- sanitized JSON backup;
+- campaign/settings editor;
+- editable Meta Pixel ID and enable/disable switch;
+- PostgreSQL connection, size, pool and migration status.
+
+Meta settings are persisted in `app_settings`, become effective on the next public-config refresh and require no frontend rebuild.
 
 ## Lead statuses
 
-- `new` – unprocessed;
+- `new` – not yet handled;
 - `contacted` – first contact made;
-- `callback` – follow-up planned;
-- `won` – membership closed;
+- `callback` – follow-up scheduled;
+- `won` – membership completed;
 - `lost` – not converted;
-- `duplicate` – possible duplicate;
-- `archived` – hidden from default list.
+- `duplicate` – recent matching request;
+- `archived` – hidden from normal lists.
 
-## Backoffice dashboard
+## Revenue rules
 
-The dashboard provides:
+- single lead value: current single price at lead creation;
+- besties lead value: current besties price at lead creation;
+- pipeline: `new`, `contacted`, `callback`;
+- won revenue: `won` only;
+- duplicate leads are excluded from the qualified-conversion denominator.
 
-- total leads;
-- new leads;
-- besties lead count;
-- open pipeline value;
-- won revenue;
-- conversion rate;
-- 30-day lead trend;
-- source distribution;
-- text search;
-- status, offer and source filters;
-- sorting;
-- mobile card layout;
-- CSV export.
+Prices already stored on a lead do not change when campaign settings are later edited.
 
-## Lead detail
+## Data exports
 
-The detail view provides:
+CSV is protected by authentication and spreadsheet-formula escaping. The logical JSON export excludes:
 
-- complete contact and offer information;
-- bestie data;
-- source and attribution;
-- privacy-consent timestamp;
-- duplicate link/reference information;
-- call, email and WhatsApp actions;
-- status;
-- assignee;
-- callback date/time;
-- internal notes;
-- lost reason;
-- audit activity timeline.
+- admin password hashes;
+- normalized email/phone matching fields;
+- IP hashes.
 
-## Campaign settings
-
-An authenticated admin can change:
-
-- campaign and company labels;
-- single and besties prices;
-- Daytime hours;
-- campaign start/end and enforcement;
-- WhatsApp number and message;
-- notification email;
-- form enabled status.
-
-The public React page reads these values from the Node API. Savings and per-person pricing are calculated automatically.
-
-## Exports
-
-- CSV: lead data suitable for spreadsheet import;
-- JSON backup: settings, leads and activities without administrator password hashes;
-- server backup script: complete internal data file for disaster recovery.
+Native database disaster recovery uses `pg_dump`, not the browser export.

@@ -1,28 +1,131 @@
-MAMA_TIME_React_Node_Complete_Production/
-├── frontend/                         React 18 + Vite application
-│   ├── src/
-│   │   ├── components/               public-form and admin components
-│   │   ├── lib/                      API, auth and campaign utilities
-│   │   ├── pages/                    landing page, legal pages and backoffice
-│   │   └── styles/                   responsive landing/admin design system
-│   ├── public/assets/                optimized campaign images and metadata
-│   └── dist/                         ready-built production frontend
-├── backend/                          Node.js + Express application
-│   ├── src/
-│   │   ├── middleware/               JWT and CSRF protection
-│   │   ├── routes/                   public, auth and admin API endpoints
-│   │   ├── services/                 leads, authentication and email
-│   │   └── utils/                    dates, hashes, CSV and helpers
-│   ├── scripts/                      admin, demo, reset and backup tools
-│   ├── tests/                        API integration tests
-│   └── data/                         writable runtime data directory
-├── deployment/                       Nginx, systemd and backup examples
-├── docs/                             complete English engineering handoff
-├── reference/                        approved visual references
-├── tools/                            setup and production doctor scripts
-├── Dockerfile                        multi-stage production image
-├── docker-compose.yml                one-container deployment
-├── ecosystem.config.cjs              PM2 single-process configuration
-├── package-lock.json                 pinned reproducible dependencies
-├── README_FIRST_EN.md                developer starting point
-└── OWNER_GO_LIVE_CHECKLIST_DE.md      owner launch checklist
+./.dockerignore
+./.env.example
+./.gitignore
+./CHANGELOG.md
+./Dockerfile
+./LICENSE_NOTES.md
+./META_PIXEL_README_DE.md
+./OWNER_GO_LIVE_CHECKLIST_DE.md
+./PROJECT_MANIFEST.txt
+./README_FIRST_EN.md
+./README_START_DE.md
+./SECURITY.md
+./START_HERE_WINDOWS.bat
+./VERSION.txt
+./backend/backups/.gitkeep
+./backend/migrations/001_initial_schema.sql
+./backend/migrations/002_additional_indexes.sql
+./backend/package.json
+./backend/scripts/backup-postgres.js
+./backend/scripts/backup.js
+./backend/scripts/create-admin.js
+./backend/scripts/db-status.js
+./backend/scripts/import-json.js
+./backend/scripts/migrate.js
+./backend/scripts/reset-data.js
+./backend/scripts/restore-postgres.js
+./backend/scripts/seed-demo.js
+./backend/src/app.js
+./backend/src/config.js
+./backend/src/db.js
+./backend/src/middleware/auth.js
+./backend/src/routes/adminRoutes.js
+./backend/src/routes/authRoutes.js
+./backend/src/routes/publicRoutes.js
+./backend/src/server.js
+./backend/src/services/authService.js
+./backend/src/services/emailService.js
+./backend/src/services/leadService.js
+./backend/src/utils/helpers.js
+./backend/src/validation.js
+./backend/tests/api.test.js
+./deployment/backup-cron.example
+./deployment/mama-time.service.example
+./deployment/nginx.conf.example
+./docker-compose.yml
+./docs/API_REFERENCE_EN.md
+./docs/ARCHITECTURE_EN.md
+./docs/BACKUP_RESTORE_EN.md
+./docs/CHANGE_REQUEST_RULES_EN.md
+./docs/CONTENT_DE_EN.md
+./docs/DATABASE_POSTGRESQL_EN.md
+./docs/DATA_STORAGE_AND_SCALING_EN.md
+./docs/DEPENDENCY_VERSIONS.txt
+./docs/DEPLOYMENT_EN.md
+./docs/DESIGN_SYSTEM_EN.md
+./docs/DEVELOPER_HANDOFF_EN.md
+./docs/ENVIRONMENT_VARIABLES_EN.md
+./docs/FORM_AND_BACKOFFICE_EN.md
+./docs/META_PIXEL_SETUP_DE.md
+./docs/MIGRATION_FROM_V1_JSON_EN.md
+./docs/ORIGINAL_DESIGN_PROMPT_DE.txt
+./docs/PROJECT_TREE_EN.txt
+./docs/QA_GO_LIVE_EN.md
+./docs/SECURITY_PRIVACY_EN.md
+./docs/TROUBLESHOOTING_EN.md
+./docs/VERIFICATION_REPORT_EN.md
+./ecosystem.config.cjs
+./frontend/dist/assets/audience-mama.webp
+./frontend/dist/assets/favicon.svg
+./frontend/dist/assets/hero-mamas-desktop.webp
+./frontend/dist/assets/hero-mamas-mobile.webp
+./frontend/dist/assets/index-B43kxNuA.css
+./frontend/dist/assets/index-G0vkRhUO.js
+./frontend/dist/assets/og-mama-time.jpg
+./frontend/dist/index.html
+./frontend/dist/robots.txt
+./frontend/dist/site.webmanifest
+./frontend/index.html
+./frontend/package.json
+./frontend/public/assets/audience-mama.webp
+./frontend/public/assets/favicon.svg
+./frontend/public/assets/hero-mamas-desktop.webp
+./frontend/public/assets/hero-mamas-mobile.webp
+./frontend/public/assets/og-mama-time.jpg
+./frontend/public/robots.txt
+./frontend/public/site.webmanifest
+./frontend/scripts/check-build.mjs
+./frontend/src/App.jsx
+./frontend/src/components/AdminLayout.jsx
+./frontend/src/components/CookieConsent.jsx
+./frontend/src/components/ErrorBoundary.jsx
+./frontend/src/components/Icon.jsx
+./frontend/src/components/LeadModal.jsx
+./frontend/src/components/ProtectedRoute.jsx
+./frontend/src/lib/AuthContext.jsx
+./frontend/src/lib/api.js
+./frontend/src/lib/campaign.js
+./frontend/src/lib/format.js
+./frontend/src/lib/metaPixel.js
+./frontend/src/main.jsx
+./frontend/src/pages/AdminAccountPage.jsx
+./frontend/src/pages/AdminDashboardPage.jsx
+./frontend/src/pages/AdminLeadDetailPage.jsx
+./frontend/src/pages/AdminLoginPage.jsx
+./frontend/src/pages/AdminSettingsPage.jsx
+./frontend/src/pages/LandingPage.jsx
+./frontend/src/pages/LegalPage.jsx
+./frontend/src/pages/NotFoundPage.jsx
+./frontend/src/styles/admin.css
+./frontend/src/styles/landing.css
+./frontend/vite.config.js
+./package-lock.json
+./package.json
+./reference/README.md
+./reference/architecture-overview.svg
+./reference/database-erd.svg
+./reference/original-design-300dpi.png
+./reference/original-responsive-overview.png
+./reference/visual-qa/admin-dashboard.png
+./reference/visual-qa/desktop-fallback-1440-full.png
+./reference/visual-qa/form-besties.png
+./reference/visual-qa/form-single.png
+./reference/visual-qa/mobile-360-full.png
+./reference/visual-qa/mobile-390-above-fold.png
+./reference/visual-qa/mobile-390-full.png
+./reference/visual-qa/mobile-390-sticky-cta.png
+./reference/visual-qa/mobile-430-full.png
+./reference/visual-qa/tablet-768-full.png
+./start_here_mac_linux.sh
+./tools/doctor.mjs
+./tools/setup.mjs

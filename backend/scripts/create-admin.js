@@ -1,40 +1,24 @@
-import bcrypt from 'bcryptjs';
-import { getDb, mutateStore, closeDb } from '../src/db.js';
-import { nowIso } from '../src/utils/helpers.js';
+import { closeDb, initDb } from '../src/db.js';
+import { upsertAdmin } from '../src/services/authService.js';
 
 const [emailArg, passwordArg, nameArg] = process.argv.slice(2);
 if (!emailArg || !passwordArg) {
-  console.error('Usage: npm run create-admin -w backend -- email@example.com StrongPassword "Display Name"');
+  console.error('Usage: npm run create-admin -- email@example.com StrongPassword "Display Name"');
+  process.exit(1);
+}
+if (passwordArg.length < 12) {
+  console.error('The admin password must contain at least 12 characters.');
   process.exit(1);
 }
 
-const email = emailArg.trim().toLowerCase();
-const name = nameArg || 'Sentinators Admin';
-const now = nowIso();
-
-async function main() {
-  await getDb();
-  await mutateStore((store) => {
-    let admin = store.admins.find((row) => row.email === email);
-    if (!admin) {
-      admin = { id: store.meta.nextAdminId++, email, created_at: now };
-      store.admins.push(admin);
-    }
-    Object.assign(admin, {
-      password_hash: bcrypt.hashSync(passwordArg, 12),
-      display_name: name,
-      role: 'admin',
-      active: true,
-      auth_version: Number(admin.auth_version || 0) + 1,
-      updated_at: now,
-      last_login_at: admin.last_login_at || null
-    });
+try {
+  await initDb();
+  const admin = await upsertAdmin({
+    email: emailArg,
+    password: passwordArg,
+    displayName: nameArg || 'Sentinators Admin'
   });
-  console.log(`Admin ready: ${email}`);
+  console.log(`Admin ready: ${admin.email} (ID ${admin.id})`);
+} finally {
   await closeDb();
 }
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});

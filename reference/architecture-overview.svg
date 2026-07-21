@@ -1,45 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">MAMA TIME React and Node architecture</title>
-  <desc id="desc">Browser traffic passes through HTTPS and Nginx to one Node Express application which serves React and stores leads in an atomic JSON file.</desc>
+  <title id="title">MAMA TIME React, Node and PostgreSQL architecture</title>
+  <desc id="desc">Browser traffic passes through HTTPS and a reverse proxy to Node Express, which serves React and stores leads transactionally in PostgreSQL.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#191a1c"/><stop offset="1" stop-color="#30272a"/></linearGradient>
     <linearGradient id="rose" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eda4a7"/><stop offset="1" stop-color="#c97880"/></linearGradient>
+    <linearGradient id="db" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9c984"/><stop offset="1" stop-color="#b58b3f"/></linearGradient>
     <filter id="shadow"><feDropShadow dx="0" dy="14" stdDeviation="18" flood-opacity=".22"/></filter>
   </defs>
   <rect width="1600" height="900" fill="url(#bg)"/>
-  <text x="90" y="92" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="44" font-weight="800">MAMA TIME · REACT + NODE ARCHITECTURE</text>
+  <text x="90" y="92" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="800">MAMA TIME · REACT + NODE + POSTGRESQL</text>
   <text x="90" y="132" fill="#e5b4b7" font-family="Arial,Helvetica,sans-serif" font-size="20" letter-spacing="3">SENTINATORS GYM · WEITE SG</text>
   <g font-family="Arial,Helvetica,sans-serif" filter="url(#shadow)">
-    <rect x="85" y="260" width="300" height="210" rx="28" fill="#fffaf5"/>
-    <text x="235" y="320" text-anchor="middle" fill="#232326" font-size="30" font-weight="800">BROWSER</text>
-    <text x="235" y="365" text-anchor="middle" fill="#6c6062" font-size="20">Public landing page</text>
-    <text x="235" y="397" text-anchor="middle" fill="#6c6062" font-size="20">Lead form</text>
-    <text x="235" y="429" text-anchor="middle" fill="#6c6062" font-size="20">Protected backoffice</text>
+    <rect x="70" y="245" width="310" height="220" rx="28" fill="#fffaf5"/>
+    <text x="225" y="307" text-anchor="middle" fill="#232326" font-size="30" font-weight="800">BROWSER</text>
+    <text x="225" y="352" text-anchor="middle" fill="#6c6062" font-size="20">German landing page</text>
+    <text x="225" y="385" text-anchor="middle" fill="#6c6062" font-size="20">Lead form</text>
+    <text x="225" y="418" text-anchor="middle" fill="#6c6062" font-size="20">Protected backoffice</text>
 
-    <rect x="510" y="260" width="260" height="210" rx="28" fill="#f2d8af"/>
-    <text x="640" y="320" text-anchor="middle" fill="#2a2525" font-size="30" font-weight="800">HTTPS</text>
-    <text x="640" y="365" text-anchor="middle" fill="#67562f" font-size="20">Nginx / TLS</text>
-    <text x="640" y="397" text-anchor="middle" fill="#67562f" font-size="20">Reverse proxy</text>
-    <text x="640" y="429" text-anchor="middle" fill="#67562f" font-size="20">Security boundary</text>
+    <rect x="475" y="245" width="265" height="220" rx="28" fill="#f2d8af"/>
+    <text x="607" y="307" text-anchor="middle" fill="#2a2525" font-size="30" font-weight="800">HTTPS</text>
+    <text x="607" y="352" text-anchor="middle" fill="#67562f" font-size="20">Nginx / TLS</text>
+    <text x="607" y="385" text-anchor="middle" fill="#67562f" font-size="20">Reverse proxy</text>
+    <text x="607" y="418" text-anchor="middle" fill="#67562f" font-size="20">Security boundary</text>
 
-    <rect x="895" y="205" width="410" height="320" rx="32" fill="url(#rose)"/>
-    <text x="1100" y="270" text-anchor="middle" fill="#fff" font-size="32" font-weight="900">NODE.JS / EXPRESS</text>
-    <rect x="945" y="310" width="310" height="72" rx="18" fill="#1e1f21"/>
-    <text x="1100" y="354" text-anchor="middle" fill="#fff" font-size="21" font-weight="700">React production build</text>
-    <rect x="945" y="400" width="310" height="72" rx="18" fill="#1e1f21"/>
-    <text x="1100" y="444" text-anchor="middle" fill="#fff" font-size="21" font-weight="700">REST API + authentication</text>
+    <rect x="835" y="190" width="420" height="330" rx="32" fill="url(#rose)"/>
+    <text x="1045" y="258" text-anchor="middle" fill="#fff" font-size="32" font-weight="900">NODE.JS / EXPRESS</text>
+    <rect x="890" y="300" width="310" height="72" rx="18" fill="#1e1f21"/>
+    <text x="1045" y="344" text-anchor="middle" fill="#fff" font-size="21" font-weight="700">React production build</text>
+    <rect x="890" y="395" width="310" height="72" rx="18" fill="#1e1f21"/>
+    <text x="1045" y="439" text-anchor="middle" fill="#fff" font-size="21" font-weight="700">REST API + authentication</text>
 
-    <rect x="995" y="650" width="410" height="150" rx="28" fill="#fffaf5"/>
-    <text x="1200" y="710" text-anchor="middle" fill="#242426" font-size="29" font-weight="850">ATOMIC JSON STORE</text>
-    <text x="1200" y="751" text-anchor="middle" fill="#6c6062" font-size="20">Leads · settings · activities · admins</text>
+    <rect x="1285" y="245" width="250" height="220" rx="28" fill="url(#db)"/>
+    <ellipse cx="1410" cy="290" rx="82" ry="28" fill="#f7e1aa" opacity=".75"/>
+    <text x="1410" y="350" text-anchor="middle" fill="#2b251e" font-size="27" font-weight="900">POSTGRESQL</text>
+    <text x="1410" y="390" text-anchor="middle" fill="#54452e" font-size="17">transactions · indexes</text>
+    <text x="1410" y="419" text-anchor="middle" fill="#54452e" font-size="17">foreign keys · backups</text>
 
-    <rect x="85" y="650" width="650" height="150" rx="28" fill="#242527" stroke="#e7a2a6" stroke-width="2"/>
-    <text x="410" y="708" text-anchor="middle" fill="#fff" font-size="27" font-weight="800">ONE RESPONSIVE APPLICATION</text>
-    <text x="410" y="749" text-anchor="middle" fill="#dcb5b8" font-size="20">Desktop · tablet · mobile · admin · API</text>
+    <rect x="845" y="640" width="690" height="150" rx="28" fill="#fffaf5"/>
+    <text x="1190" y="700" text-anchor="middle" fill="#242426" font-size="28" font-weight="850">RELATIONAL CAMPAIGN DATA</text>
+    <text x="1190" y="742" text-anchor="middle" fill="#6c6062" font-size="19">admins · app_settings · leads · lead_activities · schema_migrations</text>
+
+    <rect x="70" y="640" width="650" height="150" rx="28" fill="#242527" stroke="#e7a2a6" stroke-width="2"/>
+    <text x="395" y="698" text-anchor="middle" fill="#fff" font-size="27" font-weight="800">ONE RESPONSIVE APPLICATION</text>
+    <text x="395" y="740" text-anchor="middle" fill="#dcb5b8" font-size="20">Desktop · tablet · mobile · admin · API</text>
   </g>
   <g stroke="#f3b4b7" stroke-width="8" fill="none" stroke-linecap="round">
-    <path d="M395 365 H495"/><path d="M780 365 H875"/><path d="M1100 540 V630"/>
+    <path d="M390 355 H460"/><path d="M750 355 H820"/><path d="M1265 355 H1275"/><path d="M1410 480 V620"/>
   </g>
-  <g fill="#f3b4b7"><path d="M490 350 l25 15 -25 15z"/><path d="M870 350 l25 15 -25 15z"/><path d="M1085 625 l15 25 15-25z"/></g>
-  <text x="800" y="860" text-anchor="middle" fill="#b7afb0" font-family="Arial,Helvetica,sans-serif" font-size="17">Single-process deployment · persistent data volume · HTTPS required</text>
+  <g fill="#f3b4b7"><path d="M455 340 l25 15 -25 15z"/><path d="M815 340 l25 15 -25 15z"/><path d="M1270 340 l25 15 -25 15z"/><path d="M1395 615 l15 25 15-25z"/></g>
+  <text x="800" y="860" text-anchor="middle" fill="#b7afb0" font-family="Arial,Helvetica,sans-serif" font-size="17">HTTPS required · private database network · automated PostgreSQL backups</text>
 </svg>

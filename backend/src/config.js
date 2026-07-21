@@ -4,39 +4,7 @@ import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(__dirname, '../..');
-if (process.env.VERCEL !== '1') {
-  dotenv.config({ path: path.join(projectRoot, '.env') });
-}
-
-// Setup Vercel-specific default environment variables
-if (process.env.VERCEL === '1') {
-  // Always force database in /tmp as Vercel filesystem is read-only
-  process.env.DATABASE_PATH = '/tmp/mama-time.json';
-
-  // Force HTTPS Vercel URL if APP_BASE_URL is not set or is localhost
-  if (!process.env.APP_BASE_URL || process.env.APP_BASE_URL.includes('localhost')) {
-    if (process.env.VERCEL_URL) {
-      process.env.APP_BASE_URL = `https://${process.env.VERCEL_URL}`;
-    }
-  }
-
-  // Force secure fallbacks if they are empty, or if they are the insecure development defaults
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.includes('development-only')) {
-    process.env.JWT_SECRET = 'vercel-default-jwt-secret-very-long-and-secure-random-1234567890';
-  }
-  if (!process.env.IP_HASH_SECRET || process.env.IP_HASH_SECRET.includes('development-only')) {
-    process.env.IP_HASH_SECRET = 'vercel-default-ip-hash-secret-very-long-and-secure-random-1234567890';
-  }
-  if (!process.env.ADMIN_BOOTSTRAP_EMAIL || process.env.ADMIN_BOOTSTRAP_EMAIL.endsWith('.local')) {
-    process.env.ADMIN_BOOTSTRAP_EMAIL = 'admin@example.com';
-  }
-  if (!process.env.ADMIN_BOOTSTRAP_PASSWORD || 
-      process.env.ADMIN_BOOTSTRAP_PASSWORD === 'ChangeMe-Now-2026!' ||
-      process.env.ADMIN_BOOTSTRAP_PASSWORD.startsWith('MT-')) {
-    process.env.ADMIN_BOOTSTRAP_PASSWORD = 'VercelChangeMe-Now-2026!';
-  }
-}
-
+dotenv.config({ path: path.join(projectRoot, '.env') });
 
 const bool = (value, fallback = false) => {
   if (value === undefined || value === null || value === '') return fallback;
@@ -46,22 +14,32 @@ const num = (value, fallback) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
-const resolveFromRoot = (value, fallback) => {
-  const chosen = value || fallback;
-  return path.isAbsolute(chosen) ? chosen : path.resolve(projectRoot, chosen);
-};
+
+const env = process.env.NODE_ENV || 'development';
+const isProduction = env === 'production';
+const isTest = env === 'test';
 
 export const config = {
-  env: process.env.NODE_ENV || 'development',
-  version: process.env.APP_VERSION || '1.0.0',
-  isProduction: (process.env.NODE_ENV || 'development') === 'production',
+  env,
+  version: process.env.APP_VERSION || '2.1.0',
+  isProduction,
+  isTest,
   port: num(process.env.PORT, 3000),
   trustProxy: num(process.env.TRUST_PROXY, 0),
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
   frontendDevOrigin: process.env.FRONTEND_DEV_ORIGIN || 'http://localhost:5173',
-  databasePath: resolveFromRoot(process.env.DATABASE_PATH, 'backend/data/mama-time.json'),
-  databaseUrl: process.env.DATABASE_URL || '',
   frontendDist: path.resolve(projectRoot, 'frontend/dist'),
+  database: {
+    url: process.env.DATABASE_URL || 'postgresql://mama_time:mama_time_dev_password@127.0.0.1:5432/mama_time',
+    useMemory: bool(process.env.DATABASE_USE_PGMEM, isTest),
+    ssl: bool(process.env.DATABASE_SSL, false),
+    sslRejectUnauthorized: bool(process.env.DATABASE_SSL_REJECT_UNAUTHORIZED, true),
+    poolMax: Math.max(1, Math.min(50, num(process.env.DATABASE_POOL_MAX, 10))),
+    idleTimeoutMs: Math.max(1000, num(process.env.DATABASE_IDLE_TIMEOUT_MS, 30000)),
+    connectionTimeoutMs: Math.max(1000, num(process.env.DATABASE_CONNECTION_TIMEOUT_MS, 10000)),
+    runMigrationsOnStart: bool(process.env.RUN_MIGRATIONS_ON_START, true),
+    logQueries: bool(process.env.DATABASE_LOG_QUERIES, false)
+  },
   auth: {
     jwtSecret: process.env.JWT_SECRET || 'development-only-jwt-secret-change-before-production-0123456789',
     cookieName: process.env.ADMIN_COOKIE_NAME || 'mt_admin_token',
@@ -70,6 +48,10 @@ export const config = {
     bootstrapPassword: process.env.ADMIN_BOOTSTRAP_PASSWORD || 'ChangeMe-Now-2026!',
     bootstrapName: process.env.ADMIN_BOOTSTRAP_NAME || 'Sentinators Admin',
     showDefaultPasswordWarning: bool(process.env.SHOW_DEFAULT_PASSWORD_WARNING, true)
+  },
+  tracking: {
+    metaPixelEnabled: bool(process.env.META_PIXEL_ENABLED, false),
+    metaPixelId: String(process.env.META_PIXEL_ID || '').trim()
   },
   security: {
     ipHashSecret: process.env.IP_HASH_SECRET || 'development-only-ip-secret-change-before-production-0123456789',
@@ -97,7 +79,7 @@ export const config = {
       secure: bool(process.env.SMTP_SECURE, false),
       user: process.env.SMTP_USER || '',
       password: process.env.SMTP_PASSWORD || '',
-      from: process.env.SMTP_FROM || 'Sentinators Gym <website@example.ch>'
+      from: process.env.SMTP_FROM || 'Sentinator GmbH <info@sentinator.li>'
     }
   }
 };
@@ -105,6 +87,7 @@ export const config = {
 export function validateProductionConfig() {
   if (!config.isProduction) return;
   const problems = [];
+
   if (config.auth.jwtSecret.includes('development-only') || config.auth.jwtSecret.length < 40) {
     problems.push('JWT_SECRET must be a unique random value with at least 40 characters.');
   }
@@ -120,10 +103,23 @@ export function validateProductionConfig() {
   if (!config.auth.bootstrapEmail.includes('@') || config.auth.bootstrapEmail.endsWith('.local')) {
     problems.push('ADMIN_BOOTSTRAP_EMAIL must be a real administrative email address in production.');
   }
+  if (!/^postgres(?:ql)?:\/\//i.test(config.database.url)) {
+    problems.push('DATABASE_URL must be a valid PostgreSQL connection URL.');
+  }
+  if (/mama_time_dev_password|password@localhost|password@127\.0\.0\.1/i.test(config.database.url)) {
+    problems.push('DATABASE_URL still contains a documented development password or local-only credential.');
+  }
+  if (config.database.useMemory) {
+    problems.push('DATABASE_USE_PGMEM must be false in production. pg-mem is test-only.');
+  }
+
   const campaignStart = Date.parse(config.campaign.start);
   const campaignEnd = Date.parse(config.campaign.end);
   if (!Number.isFinite(campaignStart) || !Number.isFinite(campaignEnd) || campaignEnd <= campaignStart) {
     problems.push('CAMPAIGN_START and CAMPAIGN_END must be valid ISO dates and the end must be later than the start.');
+  }
+  if (config.tracking.metaPixelEnabled && !/^\d{5,30}$/.test(config.tracking.metaPixelId)) {
+    problems.push('META_PIXEL_ID must contain 5 to 30 digits when META_PIXEL_ENABLED=true.');
   }
   const smtpValues = [config.contact.smtp.host, config.contact.smtp.user, config.contact.smtp.password];
   if (smtpValues.some(Boolean) && !smtpValues.every(Boolean)) {

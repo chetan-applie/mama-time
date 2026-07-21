@@ -6,13 +6,14 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import { config } from './config.js';
-import { getDb } from './db.js';
+import { initDb, query } from './db.js';
 import { publicRouter } from './routes/publicRoutes.js';
 import { authRouter } from './routes/authRoutes.js';
 import { adminRouter } from './routes/adminRoutes.js';
+import { asyncHandler } from './utils/helpers.js';
 
-export function createApp() {
-  getDb();
+export async function createApp() {
+  await initDb();
   const app = express();
   if (config.trustProxy) app.set('trust proxy', config.trustProxy);
   app.disable('x-powered-by');
@@ -23,8 +24,8 @@ export function createApp() {
         defaultSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        connectSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://connect.facebook.net'],
+        connectSrc: ["'self'", 'https://connect.facebook.net', 'https://www.facebook.com'],
         fontSrc: ["'self'", 'data:'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -45,14 +46,24 @@ export function createApp() {
     next();
   });
 
-  app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, service: 'mama-time-api', version: config.version, environment: config.env, storage: 'atomic-json-file', time: new Date().toISOString() });
-  });
+  app.get('/api/health', asyncHandler(async (_req, res) => {
+    await query('SELECT 1 AS healthy');
+    res.json({
+      ok: true,
+      service: 'mama-time-api',
+      version: config.version,
+      environment: config.env,
+      storage: config.database.useMemory ? 'pg-mem-test' : 'postgresql',
+      time: new Date().toISOString()
+    });
+  }));
   app.use('/api/public', publicRouter);
   app.use('/api/admin/auth', authRouter);
   app.use('/api/admin', adminRouter);
 
-  app.use('/api', (_req, res) => res.status(404).json({ ok: false, message: 'API endpoint not found.' }));
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ ok: false, message: 'API endpoint not found.' });
+  });
 
   if (fs.existsSync(config.frontendDist)) {
     app.use(express.static(config.frontendDist, {
@@ -67,7 +78,9 @@ export function createApp() {
       res.sendFile(path.join(config.frontendDist, 'index.html'));
     });
   } else {
-    app.get('/', (_req, res) => res.status(503).send('Frontend not built. Run `npm run build` or use the Vite development server.'));
+    app.get('/', (_req, res) => {
+      res.status(503).send('Frontend not built. Run `npm run build` or use the Vite development server.');
+    });
   }
 
   app.use((error, req, res, _next) => {

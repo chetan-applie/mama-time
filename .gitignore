@@ -1,9 +1,10 @@
 node_modules/
 .env
-backend/data/*.json
-backend/data/*.json.*
-backend/data/backups/
 frontend/dist/
+backend/backups/*
+!backend/backups/.gitkeep
+*.dump
+*.sql.gz
 *.log
 .DS_Store
 coverage/

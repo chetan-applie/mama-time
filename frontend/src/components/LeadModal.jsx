@@ -105,10 +105,11 @@ export default function LeadModal({ open, initialOffer, campaign, onClose }) {
       const result = await apiFetch('/api/public/leads', { method: 'POST', body: JSON.stringify(payload) });
       setSuccess(result);
       trackEvent('mama_time_form_submit', {
+        content_name: 'MAMA TIME 2026',
+        content_category: 'Daytime Training',
         offer_type: offerType,
         value: offerType === 'besties' ? campaign.bestiesPriceChf : campaign.singlePriceChf,
-        currency: 'CHF',
-        lead_reference: result.reference
+        currency: 'CHF'
       });
     } catch (error) {
       setErrors(error.fields || {});
@@ -175,7 +176,7 @@ export default function LeadModal({ open, initialOffer, campaign, onClose }) {
             <h2>Danke! Deine Anfrage ist eingegangen.</h2>
             <p>Deine Referenznummer lautet <strong>{success.reference}</strong>. Wir melden uns so schnell wie möglich bei dir.</p>
             {success.duplicate && <p>Wir haben bereits eine ähnliche Anfrage gefunden und führen beide Einträge im Backoffice zusammen.</p>}
-            <div className="success-actions"><button className="btn btn--primary" type="button" onClick={close}>Schliessen</button>{whatsappUrl && <a className="btn btn--whatsapp" href={whatsappUrl} target="_blank" rel="noopener" onClick={() => trackEvent('mama_time_whatsapp_click')}><Icon name="whatsapp" />WhatsApp öffnen</a>}</div>
+            <div className="success-actions"><button className="btn btn--primary" type="button" onClick={close}>Schliessen</button>{whatsappUrl && <a className="btn btn--whatsapp" href={whatsappUrl} target="_blank" rel="noopener" onClick={() => trackEvent('mama_time_whatsapp_click', { content_name: 'MAMA TIME 2026', content_category: 'Daytime Training', contact_method: 'whatsapp' })}><Icon name="whatsapp" />WhatsApp öffnen</a>}</div>
           </div>
         )}
       </div>

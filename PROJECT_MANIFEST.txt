@@ -1,29 +1,69 @@
-MAMA TIME React + Node Production Kit
+MAMA TIME React + Node + PostgreSQL Production Kit
+Version 2.1.0 – consent-controlled Meta Pixel release
 
-Core entry points:
+Core frontend entry points:
 - frontend/src/main.jsx
 - frontend/src/App.jsx
 - frontend/src/pages/LandingPage.jsx
+- frontend/src/pages/LegalPage.jsx
 - frontend/src/components/LeadModal.jsx
+- frontend/src/components/CookieConsent.jsx
+- frontend/src/lib/campaign.js
+- frontend/src/lib/metaPixel.js
+- frontend/src/pages/AdminSettingsPage.jsx
+
+Core backend entry points:
 - backend/src/server.js
 - backend/src/app.js
+- backend/src/config.js
+- backend/src/db.js
 - backend/src/routes/publicRoutes.js
 - backend/src/routes/adminRoutes.js
+- backend/src/services/leadService.js
+- backend/src/validation.js
+
+Database:
+- PostgreSQL via DATABASE_URL
+- backend/migrations/*.sql
+- tables: admins, app_settings, leads, lead_activities, schema_migrations
+- Meta settings: app_settings.meta_pixel_enabled and app_settings.meta_pixel_id
+
+Meta Pixel behavior:
+- external script loads only after explicit marketing consent
+- PageView after consent
+- ViewContent on the landing page
+- Contact on an actual WhatsApp click
+- Lead only after a successful PostgreSQL-backed API response
+- strict neutral-parameter allowlist; no contact data or lead reference
+
+Public legal operator:
+- Sentinator GmbH
+- Hauptstrasse 11
+- 9476 Weite
+- Schweiz
+- info@sentinator.li
 
 Public production output:
 - frontend/dist/
 
-Runtime data:
-- backend/data/mama-time.json (created on first start; not shipped with customer data)
+Start with Docker:
+- npm run setup -- --docker=1
+- docker compose up -d --build
 
-Start:
+Start without Docker:
 - npm ci
-- npm run setup
+- npm run setup -- --database-url=postgresql://...
+- npm run db:migrate
 - npm run build
 - npm start
 
 Backoffice:
 - /admin
+- /admin/settings for campaign and Meta Pixel configuration
 
 Health:
 - /api/health
+
+Meta documentation:
+- META_PIXEL_README_DE.md
+- docs/META_PIXEL_SETUP_DE.md

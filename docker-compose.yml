@@ -1,20 +1,61 @@
 services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mama_time}
+      POSTGRES_USER: ${POSTGRES_USER:-mama_time}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mama_time_dev_password}
+    volumes:
+      - mama_time_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - mama_time_internal
+
   mama-time:
     build: .
-    image: sentinators/mama-time:1.0.0
+    image: sentinators/mama-time-postgresql:2.1.0
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://mama_time:mama_time_dev_password@db:5432/mama_time}
+      DATABASE_SSL: "false"
+      RUN_MIGRATIONS_ON_START: "false"
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
-    volumes:
-      - mama_time_data:/app/backend/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 30s
+    networks:
+      - mama_time_internal
+
+  adminer:
+    image: adminer:5
+    profiles: ["tools"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8080"
+    networks:
+      - mama_time_internal
 
 volumes:
-  mama_time_data:
+  mama_time_postgres_data:
+
+networks:
+  mama_time_internal:
+    driver: bridge

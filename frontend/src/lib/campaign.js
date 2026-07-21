@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from './api.js';
+import { configureMetaPixel, trackMetaEvent } from './metaPixel.js';
 
 export const DEFAULT_CAMPAIGN = {
   campaignName: 'MAMA TIME',
@@ -17,20 +18,33 @@ export const DEFAULT_CAMPAIGN = {
   whatsappNumber: '',
   whatsappMessage: 'Hallo Sentinators Gym, ich interessiere mich für die MAMA TIME Aktion.',
   companyName: 'Sentinators Gym',
-  companyLocation: 'Weite SG'
+  companyLocation: 'Weite SG',
+  metaPixelEnabled: false,
+  metaPixelId: ''
 };
 
-export function useCampaign() {
+export function useCampaign({ trackingAllowed = true } = {}) {
   const [campaign, setCampaign] = useState(DEFAULT_CAMPAIGN);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let active = true;
     apiFetch('/api/public/config')
-      .then((result) => active && setCampaign({ ...DEFAULT_CAMPAIGN, ...result }))
+      .then((result) => {
+        const next = { ...DEFAULT_CAMPAIGN, ...result };
+        if (active) setCampaign(next);
+      })
       .catch(() => {})
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    configureMetaPixel({
+      enabled: trackingAllowed && campaign.metaPixelEnabled,
+      pixelId: campaign.metaPixelId
+    });
+  }, [campaign.metaPixelEnabled, campaign.metaPixelId, trackingAllowed]);
+
   return { campaign, loading };
 }
 
@@ -62,10 +76,13 @@ export function trackEvent(eventName, detail = {}) {
   try {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ event: eventName, ...detail });
-    if (typeof window.fbq === 'function') {
-      const map = { mama_time_form_open: 'ViewContent', mama_time_form_submit: 'Lead', mama_time_whatsapp_click: 'Contact' };
-      if (map[eventName]) window.fbq('track', map[eventName], detail);
-    }
+    const mapping = {
+      mama_time_landing_view: { name: 'ViewContent', deferUntilConsent: true },
+      mama_time_form_submit: { name: 'Lead' },
+      mama_time_whatsapp_click: { name: 'Contact' }
+    };
+    const metaEvent = mapping[eventName];
+    if (metaEvent) trackMetaEvent(metaEvent.name, detail, { deferUntilConsent: Boolean(metaEvent.deferUntilConsent) });
   } catch {
     // Tracking must never break the application.
   }

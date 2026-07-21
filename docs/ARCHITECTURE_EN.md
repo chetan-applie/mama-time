@@ -1,95 +1,79 @@
 # Architecture
 
-## Runtime topology
+## Components
 
 ```text
-Browser
-  │
-  ├── GET /, /admin, /assets/* ──────────────┐
-  └── /api/*                                 │
-                                             ▼
-                                   Nginx / TLS proxy
-                                             │
-                                             ▼
-                                   Node.js / Express
-                                      port 3000
-                                  ┌──────────┴──────────┐
-                                  │                     │
-                          React static build      Express REST API
-                          frontend/dist           /api/public/*
-                                                  /api/admin/*
-                                                          │
-                                                          ▼
-                                              atomic JSON data store
-                                              backend/data/mama-time.json
+frontend/
+  React 18 + Vite
+  public landing page and legal pages
+  consent-controlled Meta Pixel adapter
+  protected backoffice UI
+
+backend/
+  Express API
+  authentication and CSRF middleware
+  validation and business services
+  PostgreSQL adapter and migration runner
+
+PostgreSQL
+  admins
+  app_settings
+  leads
+  lead_activities
+  schema_migrations
 ```
 
-## Frontend
+## Request flow: public lead
 
-- React 18;
-- React Router 6;
-- Vite 8;
-- plain CSS design system;
-- no external runtime CSS or font dependency;
-- same-origin API requests with credentials;
-- React production assets are served by Express.
+1. React validates the visible form.
+2. React posts JSON to `POST /api/public/leads`.
+3. Express rate limiting and Zod validation run.
+4. Honeypot and minimum form duration are checked.
+5. Campaign and form availability are loaded from `app_settings`.
+6. A PostgreSQL transaction searches for a recent duplicate.
+7. The lead and creation activity are inserted atomically.
+8. The transaction commits.
+9. The API returns HTTP 201 and a reference number.
+10. Only now does the browser emit the consent-dependent Meta `Lead` event with neutral allowlisted parameters.
+11. Optional SMTP notification is sent asynchronously.
 
-Routes:
+Validation errors, campaign closure, network errors and database failures never reach step 10.
 
-- `/` public campaign;
-- `/impressum` legal placeholder;
-- `/datenschutz` legal placeholder;
-- `/admin/login` admin login;
-- `/admin` lead dashboard;
-- `/admin/leads/:id` lead detail;
-- `/admin/settings` campaign settings;
-- `/admin/account` password management.
+## Request flow: Meta Pixel configuration and consent
 
-## Backend
+1. React loads `/api/public/config`.
+2. PostgreSQL-backed `meta_pixel_enabled` and `meta_pixel_id` are validated by the API.
+3. The frontend configures the local Pixel adapter but does not insert an external script yet.
+4. The visitor chooses **Marketing akzeptieren** or **Nur notwendige**.
+5. Only affirmative consent inserts `https://connect.facebook.net/en_US/fbevents.js`, initializes the stored ID and emits `PageView`.
+6. The landing-page `ViewContent` is emitted once; WhatsApp `Contact` and successful-form `Lead` are event-driven.
+7. The footer can reopen consent controls; withdrawal revokes consent and attempts to clear `_fbp`/`_fbc`.
 
-- Node.js ESM;
-- Express 4;
-- Zod request validation;
-- bcryptjs password hashing;
-- jsonwebtoken admin sessions;
-- Helmet security headers;
-- express-rate-limit;
-- Nodemailer for optional SMTP alerts;
-- Luxon for campaign timezone normalization.
+The adapter uses a strict event-parameter allowlist and never receives form contact fields.
 
-## Authentication model
+## Request flow: admin mutation
 
-1. Admin posts email and password to `/api/admin/auth/login`.
-2. Server verifies the bcrypt hash.
-3. Server creates a short-lived JWT with an independent CSRF token.
-4. JWT is stored in an HttpOnly, SameSite=Lax cookie.
-5. React stores the CSRF value in memory only.
-6. All modifying admin requests send `X-CSRF-Token`.
-7. Password change clears the authentication cookie and requires a new login.
+1. User logs in and receives an HttpOnly JWT cookie plus a CSRF token.
+2. React sends the CSRF token in `X-CSRF-Token` for mutations.
+3. Middleware verifies JWT, active admin and `auth_version`.
+4. The database transaction locks the target row where required.
+5. Lead/settings/password data is updated.
+6. A lead activity is written for workflow changes.
+7. React receives the updated object.
 
-## Storage model
+Meta settings use the same protected settings endpoint and are stored as `app_settings` keys. Existing PostgreSQL installations receive missing keys through `ensureDefaultSettings()`; no destructive schema migration is needed.
 
-The store contains:
+## Database access principles
 
-- `admins`;
-- `settings`;
-- `leads`;
-- `activities`;
-- monotonically increasing IDs and schema metadata.
+- all user-controlled values use PostgreSQL parameters;
+- multi-step writes use transactions;
+- IDs are database-generated `BIGSERIAL` values;
+- UTC timestamps are stored as `TIMESTAMPTZ`;
+- campaign local time is interpreted with `Europe/Zurich`;
+- sensitive normalized fields and IP hashes are not exposed in admin exports;
+- database connections come from a bounded pool;
+- the application fails startup when the database cannot be initialized.
 
-Every mutation is synchronous inside the single Node process and is written to a temporary file followed by an atomic rename. File mode is requested as `0600`.
+## Frontend/API contract
 
-## Why the 300-dpi image is not used as the whole page
-
-The visual reference is a static art-direction image. Using it as one large website image would create the following defects:
-
-- unreadable and non-selectable text;
-- inaccessible controls;
-- no responsive reflow;
-- no functional form or FAQ;
-- poor loading and Core Web Vitals;
-- poor SEO;
-- inaccurate scaling on different phones;
-- impossible content updates and tracking.
-
-The React implementation reproduces the composition with semantic HTML, CSS, real controls and responsive image assets. The reference remains in `/reference` for visual comparison.
+The public and admin API response shapes remain compatible with the PostgreSQL v2 frontend. Version 2.1.0 adds the two public camelCase Meta fields and two protected snake_case settings fields without changing lead storage or the relational schema.

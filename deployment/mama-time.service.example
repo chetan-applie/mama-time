@@ -1,6 +1,7 @@
 [Unit]
-Description=MAMA TIME React + Node application
-After=network.target
+Description=MAMA TIME React + Node + PostgreSQL application
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -8,13 +9,16 @@ User=mamatime
 Group=mamatime
 WorkingDirectory=/var/www/mama-time
 EnvironmentFile=/var/www/mama-time/.env
+ExecStartPre=/usr/bin/npm run db:migrate
 ExecStart=/usr/bin/node /var/www/mama-time/backend/src/server.js
 Restart=always
 RestartSec=5
+TimeoutStopSec=15
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
-ReadWritePaths=/var/www/mama-time/backend/data
+ProtectHome=true
+ReadWritePaths=/var/www/mama-time/backend/backups
 
 [Install]
 WantedBy=multi-user.target

@@ -10,7 +10,8 @@ module.exports = {
     max_memory_restart: '350M',
     time: true,
     env: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      RUN_MIGRATIONS_ON_START: 'false'
     }
   }]
 };
