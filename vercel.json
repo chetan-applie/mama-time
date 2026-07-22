@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run setup -- --base-url=https://your-production-domain --production=1 --force=1 && npm run db:migrate && npm run build && npm run doctor",
+  "buildCommand": "npm run build && npm run doctor",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
