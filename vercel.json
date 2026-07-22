@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build && npm run doctor",
+  "buildCommand": "npm run db:migrate && npm run build && npm run doctor",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     {
