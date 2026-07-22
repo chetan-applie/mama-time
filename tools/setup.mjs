@@ -11,17 +11,17 @@ const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
 }));
 const truthy = (value) => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
 const randomSecret = () => crypto.randomBytes(48).toString('base64url');
-const randomPassword = (prefix = 'MT') => `${prefix}-${crypto.randomBytes(15).toString('base64url')}!9a`;
+// const randomPassword = (prefix = 'MT') => `${prefix}-${crypto.randomBytes(15).toString('base64url')}!9a`;
 
 const production = truthy(args.production);
 const docker = truthy(args.docker);
 const baseUrl = args['base-url'] || (production ? '' : 'http://localhost:3000');
-const adminPassword = args['admin-password'] || randomPassword('MT-ADMIN');
+const adminPassword = args['admin-password'] || 'ChangeMe-Now-2026!';
 const adminEmail = (args['admin-email'] || (production ? '' : 'admin@sentinators.local')).trim().toLowerCase();
 const whatsapp = String(args.whatsapp || '').replace(/\D/g, '');
 const notificationEmail = String(args['notification-email'] || '').trim();
 const enforceCampaign = args['campaign-enforce'] === undefined ? production : truthy(args['campaign-enforce']);
-const postgresPassword = args['postgres-password'] || randomPassword('MT-DB');
+const postgresPassword = args['postgres-password'] || 'ChangeMe-Now-2026!';
 const databaseUrl = args['database-url'] || `postgresql://mama_time:${encodeURIComponent(postgresPassword)}@127.0.0.1:5432/mama_time`;
 const dockerDatabaseUrl = args['database-url-docker'] || `postgresql://mama_time:${encodeURIComponent(postgresPassword)}@db:5432/mama_time`;
 
